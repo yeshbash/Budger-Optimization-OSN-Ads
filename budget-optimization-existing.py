@@ -41,8 +41,9 @@ def initialize_ri(users):
 	
 print("Initializing Data")
 #Loading label_cost and label_users from data set file
+user_size = input("User Size")
 label_cost = load_data("C:\\Users\\yeshwanth\\Test\\label_costs")
-label_users = load_data("C:\\Users\\yeshwanth\\Test\\label_users")
+label_users = load_data("C:\\Users\\yeshwanth\\Test\\label_users-"+user_size)
 
 
 while(input()!="N"):

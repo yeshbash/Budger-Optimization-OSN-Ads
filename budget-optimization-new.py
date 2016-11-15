@@ -24,12 +24,23 @@ def get_users(label_set):
 	return l_users
 
 def initialize_data():
+	usr_size = input("User set size")
 	label_cost = load_data("C:\\Users\\yeshwanth\\Test\\label_costs")
-	label_users = load_data("C:\\Users\\yeshwanth\\Test\\label_users")
+	label_users = load_data("C:\\Users\\yeshwanth\\Test\\label_users-"+usr_size)
 	label_attribues = load_data("C:\\Users\\yeshwanth\\Test\\attribute_values")
 	return label_cost,label_users,label_attribues
 
 ################Algorithm Methods########################	
+
+def threshold_check(allocation,threshold,li,lp):
+	li_cover = allocation/label_cost[li]
+	lp_cover = allocation/label_cost[lp]
+	
+	if li_cover-lp_cover >= Decimal(threshold)*lp_cover:
+		return True
+	else:
+		return False
+	
 
 #Extends current label set by adding an optimal attribute. Attribute with highest cummulative RI is chosen optimal
 #Param : cur_ls - Current Label Set | label_ri - Current Ratio of Increment List | u_st - Target Users
@@ -56,10 +67,10 @@ def extend_labelset(cur_ls, label_ri,u_st):
 		if len(attribute_ri) >0 :
 			labels_found = True
 			opt_attr = max(attribute_ri.keys(), key = lambda k : attribute_ri[k])
-			print("Optimal Attribute : ",opt_attr )
+			#print("Optimal Attribute : ",opt_attr )
 			for l_ri in attr_label_ri[opt_attr]:
 				label_ri[l_ri[0]] = l_ri[1] #Including labels of optimal attribute to RI list
-			print("Total Lables Added on top of",cur_ls,":", len(attr_label_ri[opt_attr]))
+			#print("Total Lables Added on top of",cur_ls,":", len(attr_label_ri[opt_attr]))
 	
 	return labels_found,label_ri
 
@@ -79,13 +90,13 @@ def allocate_budget(ls, budget, users):
 	else:
 		b_users = users
 	users_covered += int(allocation/label_cost[ls]) #Users covered stats tracker
-	print("Budger Allocation:\nLabel:",ls,"\nBudger Allocated:",allocation,"\nUsers Covered",  allocation/label_cost[ls],"\nRemaining Budger:",b_budget)
+	#print("Budger Allocation:\nLabel:",ls,"\nBudger Allocated:",allocation,"\nUsers Covered",  allocation/label_cost[ls],"\nRemaining Budger:",b_budget)
 	
 	return b_budget,b_users
 
 #Optimized Budget Distribution for a given Budget and Preferred Label set
 #Param : label_set - Preferred Label Set | b_0 - Advertiser Budger | u_st - Target Users
-def optimize_budget(label_set, b_0, u_st):
+def optimize_budget(label_set, b_0, u_st, alloc_thrsold):
 	label_ri = collections.defaultdict(Decimal)
 	#Initial Extension of Label set
 	extension, label_ri = extend_labelset(label_set,label_ri,u_st)
@@ -93,20 +104,21 @@ def optimize_budget(label_set, b_0, u_st):
 		while b_0 >0 and len(u_st) >0: #Iterates untill budget available or untill all users are covered
 			if len(label_ri) >0: #If optimal lables available for adding
 				max_ri_label = max(label_ri.keys(),key = lambda k : label_ri[k])
-				print("Max RI lable:",max_ri_label)
+				max_ri_users = get_users(max_ri_label)
+				allocation_needed = min(label_cost[max_ri_label]*len(max_ri_users), b_0)
 				del label_ri[max_ri_label]
-				if label_cost[max_ri_label]*len(get_users(max_ri_label)) <= b_0:
-					#Budget available to target entire optimal label set
-					print("Cost Sufficient")
+				#print("Max RI Label :",max_ri_label)
+				if threshold_check(allocation_needed,alloc_thrsold,max_ri_label,label_set) == True:
+					#print("Allocation Threshold met")
 					b_0,u_st = allocate_budget(max_ri_label,b_0,u_st)
 				else:
-					#Budget insufficient to target entire optimal label set. Initates further extension
+					#print("Allocation Threshold Not Met")
 					extension, label_ri = extend_labelset(max_ri_label,label_ri,u_st)
-					print("Further Extension Done")
 					if extension == True:
+						#print("Further Extension Possible. Continuing..")
 						continue
 					else:
-						print("No more extension possible")
+						#print("No more extension possible")
 						b_0,u_st = allocate_budget(max_ri_label,b_0,u_st)
 			else:
 				#Allocates maximum budget to current optimal label set
@@ -138,10 +150,10 @@ while(input()!="N"):
 	print("Cost per user: ",label_cost[l_p_key])
 	
 	b_0 = Decimal(input("Budget:"))
-	
+	alloc_threshold = int(input("Allocation Threshold in %: "))/100
 	print("[Debug] Algorithm Begin")
 	
-	optimize_budget(l_p_key,b_0,u_st)
+	optimize_budget(l_p_key,b_0,u_st,alloc_threshold)
 	
 	print("Result Summary\n",label_budget)
 	print("Users Covered:", users_covered)
