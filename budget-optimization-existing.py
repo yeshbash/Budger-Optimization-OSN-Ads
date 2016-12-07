@@ -1,6 +1,7 @@
 import pickle
 import collections
 import decimal
+import datetime
 
 decimal.getcontext().prec = 3
 
@@ -38,6 +39,14 @@ def initialize_ri(users):
 				#print(user,":",l)
 				user_set_assn[user].add(l) 
 	return return_list
+
+def display_result(budget,count):
+	print("=========Results Summary===========")
+	print("Total user targeted in expectation: ",count)
+	print("Allocation Details:")
+	for k in budget:
+		s_budget = str(budget[k])
+		print (k,"\t\t",s_budget)
 	
 print("Initializing Data")
 #Loading label_cost and label_users from data set file
@@ -48,7 +57,8 @@ label_users = load_data("C:\\Users\\yeshwanth\\Test\\label_users-"+user_size)
 
 while(input()!="N"):
 	#Initialization
-	print("[Initialization] In Progress..")
+	start_time = datetime.datetime.now()
+	
 	user_set_assn = collections.defaultdict(set)
 	user_fx = collections.defaultdict(int)
 	label_ri = collections.defaultdict(int)
@@ -56,16 +66,19 @@ while(input()!="N"):
 	max_ri_label,max_ri_val,h_i,max_ri_users = (),0,0,[]
 	target_count = 0
 	
-	l_p = input("Preferred Label:")
-	b_0 = decimal.Decimal(input("Budget"))
+	l_p = input("Preferred Label: ")
+	b_0 = decimal.Decimal(input("Budget: "))
 	l_p_key = get_lable_key([i.strip() for i in l_p.split(",")])
 	u_st = get_users(l_p_key) #Target User Set
-	print("Total users:",u_st,"\nLen",len(u_st))
+	print("Total users:",len(u_st))
 	print("Cost per user:",label_cost[l_p_key])
+	print("[Initialization] Begin")
 	related_ls = initialize_ri(u_st)
-	print("[Initialization] Complete")
 	
-	input("Wanna beging Algo?:")
+	time_taken = datetime.datetime.now() - start_time
+	print("[Initialization] Complete\t Time Taken : ",time_taken.seconds,"s")
+	
+	print("[Algorithm] Begin")
 	
 	while len(u_st) >0 and b_0 > 0  :
 		#Getting the label set with maximum ratio of increment
@@ -73,13 +86,13 @@ while(input()!="N"):
 		max_ri_users = get_users(max_ri_label)
 		h_i = get_hval(max_ri_users)
 		
-		print("Max RI:",max_ri_label,":",max_ri_users,":",h_i)
+		#print("Max RI:",max_ri_label,":",max_ri_users,":",h_i)
 		
 		total_sc = label_cost[max_ri_label]*len(max_ri_users)
 		budget_diff = min(b_0,(1-h_i)*total_sc)
 		budget[max_ri_label] = budget[max_ri_label]+budget_diff
 		
-		print("Budget allocated:",budget_diff)
+		#print("Budget allocated:",budget_diff)
 		
 		b_0 = b_0 - budget_diff
 		
@@ -92,6 +105,6 @@ while(input()!="N"):
 					u_ls = get_users(ls)
 					label_ri[ls] -= 1/(len(u_ls)*label_cost[ls])
 					#update ri for sets with which user is associated with
-	print("Total users targetted in expectation:",target_count)
-	print("Result\n",budget)
-	#print("Total users targetted in expectation:"target_count)
+	time_taken = datetime.datetime.now() - start_time
+	print("[Algorithm] Complete\tTime Taken:",time_taken.seconds,"s")
+	display_result(budget,target_count)
